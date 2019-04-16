@@ -17,7 +17,7 @@ Prerequisite viewer for i.e. easier planning of courses. Directly sources from i
 
 ## to implement:
 
-- selection of department
+- selection of department (make more explicit with a text field)
 - different colours for each _and_ section
 - improve highlighting to fully pass through _or_'s
 - clicks popup with more information i.e. descriptions
@@ -25,6 +25,8 @@ Prerequisite viewer for i.e. easier planning of courses. Directly sources from i
 - style _or_'s to be smaller and styled differently
 - exporting as svg or png of a given size
 - include toggle for only showing classes taught in a given term (maybe possible to query classes.colorado.edu)
+- a way of searching for the courses required of a major / minor if possible (i have no idea how)
+- render prereqless courses as a subgraph cluster https://graphviz.gitlab.io/_pages/Gallery/directed/cluster.html
 
 
 ## to optimize:

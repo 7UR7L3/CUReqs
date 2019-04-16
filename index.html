@@ -58,8 +58,9 @@ function httpGetAsync(theUrl, callback)
 }
 
 
+var searchdept = ( location.search.substring(1) || "csci" ) + "/";
 
-httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/courses-a-z/csci/", data =>
+httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/courses-a-z/" + searchdept, data =>
 {
 	var extractreq = s => s.split( "\n" ).filter( a => a.indexOf( "Requisites: " ) == 0 )[0];
 
@@ -119,13 +120,18 @@ httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/
 	mermtext += "\n";
 	var nodupes = {};
 	for( var c of Object.keys( reqsparsed ) )
+	{
+		mermtext += c + "\n";
 		for( var and of reqsparsed[c] )
 		{
 			var outorid = false;
 			for( var or of and )
 			{
 				if( or.length == 1 || and.length == 1 )
-					mermtext += Object.keys( or )[0] + "->" + c + "\n";
+				{
+					var style = and.map( o => Object.values( o )[0] ).includes( "coreq" ) ? "dotted" : and.map( o => Object.values( o )[0] ).includes( "pre/coreq" ) ? "dashed" : "solid";
+					mermtext += Object.keys( or )[0] + "->" + c + " [style=" + style + "]\n";
+				}
 				else
 				{
 					var toadd = Object.keys( or )[0] + "->" + "or" + and.map( o => Object.keys( o )[0] ).sort().join("") + "\n";
@@ -141,6 +147,7 @@ httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/
 				mermtext += "or" + and.map( o => Object.keys( o )[0] ).sort().join("") + ` [label="or"]` + "\n";
 			}
 		}
+	}
 
 	mermtext += "}";
 
