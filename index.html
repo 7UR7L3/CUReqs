@@ -59,7 +59,7 @@ function httpGetAsync(theUrl, callback)
 
 
 
-httpGetAsync( "https://catalog.colorado.edu/courses-a-z/csci/", data =>
+httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/courses-a-z/csci/", data =>
 {
 	var extractreq = s => s.split( "\n" ).filter( a => a.indexOf( "Requisites: " ) == 0 )[0];
 
