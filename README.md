@@ -1,7 +1,10 @@
 # CUReqs
 CU Course Prerequisite Viewer
 
-(try with https://htmlpreview.github.io/?https://github.com/7UR7L3/CUReqs/blob/master/index.html)
+https://7ur.it/CUReqs/
+~~(try with https://htmlpreview.github.io/?https://github.com/7UR7L3/CUReqs/blob/master/index.html)~~
+^ apparently htmlpreview doesn't load javascript or something damn.
+
 
 ---
 
