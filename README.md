@@ -17,6 +17,7 @@ Prerequisite viewer for i.e. easier planning of courses. Directly sources from i
 
 ## to implement:
 
+- fix the bug of hovering over the or below csci3022 (probably easier to do after optimization/restructuring)
 - selection of department (make more explicit with a text field)
 - different colours for each _and_ section
 - improve highlighting to fully pass through _or_'s
