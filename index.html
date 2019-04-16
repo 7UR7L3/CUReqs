@@ -1,0 +1,192 @@
+<html>
+
+<!-- https://catalog.colorado.edu/ribbit/index.cgi?page=getcourse.rjs&code=CSCI 1300 -->
+<!-- actually that's bad. only loads one at a time -->
+
+<head>
+<title>Reqs.</title>
+
+<style>
+html, body
+{
+	background-color: #E5E9F0;
+	color: #2E3440;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	margin: 5px;
+}
+svg
+{
+	border: solid 1px black;
+	width: 100%;
+	height: 90%;
+	padding: 0;
+}
+
+.node path.hover { fill: #aaaacc; }
+.edge path.hover {  stroke-width: 3; }
+
+</style>
+
+<!-- <script src="https://unpkg.com/mermaid@8.0.0/dist/mermaid.min.js"></script> -->
+<!-- <script>mermaid.initialize( { startOnLoad: true } );</script> -->
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://unpkg.com/viz.js@1.8.0/viz.js"></script>
+<script src="https://unpkg.com/d3-graphviz@1.4.0/build/d3-graphviz.min.js"></script>
+
+
+<body>
+<h1>CU Course Requirements</h1>
+(pulling directly from https://catalog.colorado.edu/courses-a-z/)
+
+<div id="graph"></div>
+
+
+<script>
+
+// https://catalog.colorado.edu/ribbit/index.cgi?page=getcourse.rjs&code=CSCI 1320
+
+function httpGetAsync(theUrl, callback)
+{
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.onreadystatechange = function() { 
+		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			callback(xmlHttp.responseText);
+	}
+	xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+	xmlHttp.send(null);
+}
+
+
+
+httpGetAsync( "https://catalog.colorado.edu/courses-a-z/csci/", data =>
+{
+	var extractreq = s => s.split( "\n" ).filter( a => a.indexOf( "Requisites: " ) == 0 )[0];
+
+	data = (new window.DOMParser()).parseFromString( data, "text/html" );
+	var courses = [ ...data.querySelectorAll( ".courseblock" ) ];
+
+	var reqs = courses.reduce( function( object, course )
+	{
+		var extrahtml = course.querySelector( ".courseblockextra" ).innerHTML;
+		var reqtexthtml = (s=extrahtml.substring( extrahtml.indexOf( "<strong>Requisites: " ) )).substring( 0, s.indexOf( "<br>" ) );
+		var reqtext = (new window.DOMParser()).parseFromString( reqtexthtml, "text/html" ).querySelector( "body" ).innerText;
+
+		return { ...object, [course.dataset.coursecode]: reqtext.indexOf( "Requisites: " ) == 0 ? reqtext : "no reqs" };
+	}, {} );
+
+	// for( var r of Object.values( reqs ) )
+	// 	document.body.innerText += "\n\n" + JSON.stringify( r.split( " and " ).map( a => a.split( " or " ) ) );
+
+
+	reqsparsed = {};
+	for( var course of Object.keys( reqs ) )
+	{
+		var req = reqs[ course ];
+
+		var parse = [];
+
+		for( var and of req.split( / and |\) \(/ ) )
+		{
+			parse.push( [] );
+			var reqtype = "prereq";
+			for( var or of and.split( " or " ) )
+			{
+				if( and.includes( "prereq" ) && ( and.includes( "coreq" ) || and.includes( "co-req" ) ) ) reqtype = "pre/coreq"
+				else if( or.includes( "prereq" ) ) reqtype = "prereq";
+				else if( or.includes( "coreq" ) || or.includes( "co-req" ) ) reqtype = "coreq";
+
+				for( var c of or.match( /....\xa0..../g ) || [] ) // no break space
+					parse[ parse.length - 1 ].push( { [c.replace( /\s/, "" ).toLowerCase()]: reqtype } );
+			}
+			if( parse[ parse.length - 1 ].length == 0 ) parse.pop();
+		}
+
+		reqsparsed[ course.replace( /\s/, "" ).toLowerCase() ] = parse;
+	}
+
+	localStorage.setItem( "courseReqs", JSON.stringify( reqsparsed ) ); // might as well
+	console.log( "check localStorage for parsed json course requirement data" );
+
+	// document.body.innerText += JSON.stringify( reqsparsed, null, 4 )
+	console.log( reqsparsed )
+
+
+
+
+	// var mermtext = "graph LR;\n" + Object.keys( reqsparsed ).join( ";" );
+	var mermtext = `digraph G {\ngraph [nodesep=.1, ranksep=.9, bgcolor="#ffffff00"]\nnode [shape=box, style=rounded, width=.9, height=.4, color="#3B4252", fontcolor="#3B4252"]\nedge [color="#3B4252"]`
+	mermtext += "\n";
+	var nodupes = {};
+	for( var c of Object.keys( reqsparsed ) )
+		for( var and of reqsparsed[c] )
+		{
+			var outorid = false;
+			for( var or of and )
+			{
+				if( or.length == 1 || and.length == 1 )
+					mermtext += Object.keys( or )[0] + "->" + c + "\n";
+				else
+				{
+					var toadd = Object.keys( or )[0] + "->" + "or" + and.map( o => Object.keys( o )[0] ).sort().join("") + "\n";
+					if( !( toadd in nodupes ) ) mermtext += toadd;
+					nodupes[ toadd ] = 1;
+					outorid = true;
+				}
+			}
+			if( outorid )
+			{
+				var style = and.map( o => Object.values( o )[0] ).includes( "coreq" ) ? "dotted" : and.map( o => Object.values( o )[0] ).includes( "pre/coreq" ) ? "dashed" : "solid";
+				mermtext += "or" + and.map( o => Object.keys( o )[0] ).sort().join("") + "->" + c + " [style=" + style + "]\n";
+				mermtext += "or" + and.map( o => Object.keys( o )[0] ).sort().join("") + ` [label="or"]` + "\n";
+			}
+		}
+
+	mermtext += "}";
+
+	console.log( { graphVizText: mermtext } )
+
+
+	d3.select( "#graph" ).graphviz()
+		.renderDot( mermtext );
+	// d3.select("svg").on("dblclick.zoom", null);
+
+	// document.getElementById( "merm" ).innerHTML = mermtext;
+	// mermaid.init( undefined, "#merm" );
+
+	for( var node of document.querySelectorAll( ".node" ) )
+	node.addEventListener( "mouseenter", function( event )
+    {
+    	for( var n of document.querySelectorAll( ".node > path" ) )
+			n.classList.remove( "hover" );
+		event.target.querySelector( "path" ).classList.add( "hover" );
+
+		classOn = event.target.querySelector( "title" ).innerHTML;
+		var colouron = 0;
+		for( var and of reqsparsed[ classOn ] || [] )
+		{
+			colouron++;
+			for( var or of and )
+				for( var node of document.querySelectorAll( ".node" ) )
+					if( node.querySelector( "title" ).innerHTML == Object.keys( or )[0] )
+						node.querySelector( "path" ).classList.add( "hover" );
+		}
+
+		for( var e of document.querySelectorAll( ".edge" ) )
+		{
+			if( e.querySelector( "title" ).innerHTML.includes( "-&gt;" + classOn ) )
+			{
+				e.querySelector( "path" ).classList.add( "hover" );
+				for( n of [ ...document.querySelectorAll( ".node" ) ].filter( n => n.querySelector( "title" ).innerHTML.includes( "-&gt;" ) && e.querySelector( "title" ).innerHTML.includes( n.querySelector( "title" ).innerHTML ) ) )
+					n.querySelector( "path" ).classList.add( "hover" );
+			}
+			else
+				e.querySelector( "path" ).classList.remove( "hover" );
+		}
+
+    } );
+
+
+} );
+
+</script>
