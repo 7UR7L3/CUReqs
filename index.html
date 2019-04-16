@@ -14,6 +14,7 @@ html, body
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	margin: 5px;
 }
+text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
 svg
 {
 	border: solid 1px black;
@@ -21,6 +22,7 @@ svg
 	height: 90%;
 	padding: 0;
 }
+
 
 .node path.hover { fill: #aaaacc; }
 .edge path.hover {  stroke-width: 3; }
@@ -58,62 +60,80 @@ function httpGetAsync(theUrl, callback)
 }
 
 
-var searchdept = ( location.search.substring(1) || "csci" ) + "/";
-
-httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/courses-a-z/" + searchdept, data =>
+var urlSearchParams = ( new URL( document.location ) ).searchParams;
+var searchdept = ( urlSearchParams.get( "dept" ) || "csci" );
+if( !urlSearchParams.get( "dept" ) )
 {
-	var extractreq = s => s.split( "\n" ).filter( a => a.indexOf( "Requisites: " ) == 0 )[0];
+	urlSearchParams.set( "dept", "csci" );
+	var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + urlSearchParams.toString();
+	window.history.pushState( {path: newUrl}, "", newUrl );
+}
 
-	data = (new window.DOMParser()).parseFromString( data, "text/html" );
-	var courses = [ ...data.querySelectorAll( ".courseblock" ) ];
+reqsparsed = {};
 
-	var reqs = courses.reduce( function( object, course )
+if( r=sessionStorage.getItem( "reqsparsed-" + searchdept ) )
+{
+	reqsparsed = JSON.parse( r );
+	console.log( "(loaded reqsparsed from sessionStorage)" );
+	main();
+}
+else
+	httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/courses-a-z/" + searchdept + "/", data =>
 	{
-		var extrahtml = course.querySelector( ".courseblockextra" ).innerHTML;
-		var reqtexthtml = (s=extrahtml.substring( extrahtml.indexOf( "<strong>Requisites: " ) )).substring( 0, s.indexOf( "<br>" ) );
-		var reqtext = (new window.DOMParser()).parseFromString( reqtexthtml, "text/html" ).querySelector( "body" ).innerText;
+		var extractreq = s => s.split( "\n" ).filter( a => a.indexOf( "Requisites: " ) == 0 )[0];
 
-		return { ...object, [course.dataset.coursecode]: reqtext.indexOf( "Requisites: " ) == 0 ? reqtext : "no reqs" };
-	}, {} );
+		data = (new window.DOMParser()).parseFromString( data, "text/html" );
+		var courses = [ ...data.querySelectorAll( ".courseblock" ) ];
 
-	// for( var r of Object.values( reqs ) )
-	// 	document.body.innerText += "\n\n" + JSON.stringify( r.split( " and " ).map( a => a.split( " or " ) ) );
-
-
-	reqsparsed = {};
-	for( var course of Object.keys( reqs ) )
-	{
-		var req = reqs[ course ];
-
-		var parse = [];
-
-		for( var and of req.split( / and |\) \(/ ) )
+		var reqs = courses.reduce( function( object, course )
 		{
-			parse.push( [] );
-			var reqtype = "prereq";
-			for( var or of and.split( " or " ) )
-			{
-				if( and.includes( "prereq" ) && ( and.includes( "coreq" ) || and.includes( "co-req" ) ) ) reqtype = "pre/coreq"
-				else if( or.includes( "prereq" ) ) reqtype = "prereq";
-				else if( or.includes( "coreq" ) || or.includes( "co-req" ) ) reqtype = "coreq";
+			var extrahtml = course.querySelector( ".courseblockextra" ).innerHTML;
+			var reqtexthtml = (s=extrahtml.substring( extrahtml.indexOf( "<strong>Requisites: " ) )).substring( 0, s.indexOf( "<br>" ) );
+			var reqtext = (new window.DOMParser()).parseFromString( reqtexthtml, "text/html" ).querySelector( "body" ).innerText;
 
-				for( var c of or.match( /....\xa0..../g ) || [] ) // no break space
-					parse[ parse.length - 1 ].push( { [c.replace( /\s/, "" ).toLowerCase()]: reqtype } );
+			return { ...object, [course.dataset.coursecode]: reqtext.indexOf( "Requisites: " ) == 0 ? reqtext : "no reqs" };
+		}, {} );
+
+		// for( var r of Object.values( reqs ) )
+		// 	document.body.innerText += "\n\n" + JSON.stringify( r.split( " and " ).map( a => a.split( " or " ) ) );
+
+
+		for( var course of Object.keys( reqs ) )
+		{
+			var req = reqs[ course ];
+
+			var parse = [];
+
+			for( var and of req.split( / and |\) \(/ ) )
+			{
+				parse.push( [] );
+				var reqtype = "prereq";
+				for( var or of and.split( " or " ) )
+				{
+					if( and.includes( "prereq" ) && ( and.includes( "coreq" ) || and.includes( "co-req" ) ) ) reqtype = "pre/coreq"
+					else if( or.includes( "prereq" ) ) reqtype = "prereq";
+					else if( or.includes( "coreq" ) || or.includes( "co-req" ) ) reqtype = "coreq";
+
+					for( var c of or.match( /....\xa0..../g ) || [] ) // no break space
+						parse[ parse.length - 1 ].push( { [c.replace( /\s/, "" ).toLowerCase()]: reqtype } );
+				}
+				if( parse[ parse.length - 1 ].length == 0 ) parse.pop();
 			}
-			if( parse[ parse.length - 1 ].length == 0 ) parse.pop();
+
+			reqsparsed[ course.replace( /\s/, "" ).toLowerCase() ] = parse;
 		}
 
-		reqsparsed[ course.replace( /\s/, "" ).toLowerCase() ] = parse;
-	}
+		sessionStorage.setItem( "reqsparsed-" + searchdept, JSON.stringify( reqsparsed ) ); // might as well
 
-	localStorage.setItem( "courseReqs", JSON.stringify( reqsparsed ) ); // might as well
-	console.log( "check localStorage for parsed json course requirement data" );
+		// document.body.innerText += JSON.stringify( reqsparsed, null, 4 )
 
-	// document.body.innerText += JSON.stringify( reqsparsed, null, 4 )
-	console.log( reqsparsed )
+		main();
+	} );
 
-
-
+function main()
+{
+	console.log( "check sessionStorage for parsed json course requirement data" );
+	console.log( "reqsparsed", reqsparsed );
 
 	// var mermtext = "graph LR;\n" + Object.keys( reqsparsed ).join( ";" );
 	var mermtext = `digraph G {\ngraph [nodesep=.1, ranksep=.9, bgcolor="#ffffff00"]\nnode [shape=box, style=rounded, width=.9, height=.4, color="#3B4252", fontcolor="#3B4252"]\nedge [color="#3B4252"]`
@@ -151,7 +171,7 @@ httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/
 
 	mermtext += "}";
 
-	console.log( { graphVizText: mermtext } )
+	console.log( "generated graphViz", [ mermtext ] )
 
 
 	d3.select( "#graph" ).graphviz()
@@ -192,8 +212,6 @@ httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/
 		}
 
     } );
-
-
-} );
+}
 
 </script>

@@ -1,7 +1,7 @@
 # CUReqs
 CU Course Prerequisite Viewer
 
-https://7ur.it/CUReqs/?csci \
+https://7ur.it/CUReqs/?dept=csci \
 ~~(try with https://htmlpreview.github.io/?https://github.com/7UR7L3/CUReqs/blob/master/index.html)~~ \
 ^ apparently htmlpreview doesn't load javascript or something damn.
 
@@ -19,11 +19,13 @@ Prerequisite viewer for i.e. easier planning of courses. Directly sources from i
 
 - fix the bug of hovering over the or below csci3022 (probably easier to do after optimization/restructuring)
 - selection of department (make more explicit with a text field)
-- different colours for each _and_ section
-- improve highlighting to fully pass through _or_'s
+- different colours for each _and_ section including arrows
+- add hovering over edges to highlight that edge and the courses at either end
+- improve highlighting to fully pass through _or_'s, add option to highlight descendents too
 - clicks popup with more information i.e. descriptions
 - include toggle for loading full out-of-department prereq trees too
 - include toggles for what info is displayed in each bubble
+- also let the info displayed in each bubble change depending on hover / highlight
 - style _or_'s to be smaller and styled differently
 - click or double click or a course to focus it / hide everything outside its prereq tree
 - exporting as svg or png of a given size
