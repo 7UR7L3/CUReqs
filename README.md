@@ -27,12 +27,15 @@ Prerequisite viewer for i.e. easier planning of courses. Directly sources from i
 - include toggles for what info is displayed in each bubble
 - also let the info displayed in each bubble change depending on hover / highlight
 - style _or_'s to be smaller and styled differently
+- support recommended reqs for i.e. atoc
 - click or double click or a course to focus it / hide everything outside its prereq tree
 - exporting as svg or png of a given size
+- buttons for zooming in and out
 - include toggle for only showing classes taught in a given term (maybe possible to query classes.colorado.edu)
 - a way of searching for the courses required of a major / minor if possible (i have no idea how)
 - render prereqless courses as a subgraph cluster https://graphviz.gitlab.io/_pages/Gallery/directed/cluster.html (or see packMode and smoothing and repulsiveforce and remincross?)
 - different styles
+- increase the depth you can zoom in
 
 
 ## to optimize:

@@ -23,6 +23,11 @@ svg
 	padding: 0;
 }
 
+/*
+colour _and_ groups with d3.schemePastel1
+colour _and_ group arrows with d3.schemePastel1.map( c => d3.color( c ).darker().toString() ) actually better to just use a darkened d3.schemeSet1 for contrast
+*/
+
 
 .node path.hover { fill: #aaaacc; }
 .edge path.hover {  stroke-width: 3; }
@@ -33,15 +38,16 @@ svg
 <!-- <script>mermaid.initialize( { startOnLoad: true } );</script> -->
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 <script src="https://unpkg.com/viz.js@1.8.0/viz.js"></script>
-<script src="https://unpkg.com/d3-graphviz@1.4.0/build/d3-graphviz.min.js"></script>
+<script src="https://unpkg.com/d3-graphviz@2.6.1/build/d3-graphviz.min.js"></script>
 
 
 <body>
 <h1>CU Course Requirements</h1>
 (pulling directly from https://catalog.colorado.edu/courses-a-z/)
 
-<div id="graph"></div>
+<div id="graph"><div id="loading">[loading...]</div></div>
 
 
 <script>
@@ -175,7 +181,9 @@ function main()
 
 
 	d3.select( "#graph" ).graphviz()
-		.renderDot( mermtext );
+		.zoomScaleExtent( [ .3, 20 ] )
+		.dot( mermtext )
+		.render( callback => document.getElementById( "loading" ).remove() );
 	// d3.select("svg").on("dblclick.zoom", null);
 
 	// document.getElementById( "merm" ).innerHTML = mermtext;
