@@ -39,7 +39,7 @@ colour _and_ group arrows with d3.schemePastel1.map( c => d3.color( c ).darker()
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
-<script src="https://unpkg.com/viz.js@1.8.0/viz.js"></script>
+<script src="https://unpkg.com/viz.js@1.8.0/viz.js" type="javascript/worker"></script>
 <script src="https://unpkg.com/d3-graphviz@2.6.1/build/d3-graphviz.min.js"></script>
 
 
@@ -142,7 +142,7 @@ function main()
 	console.log( "reqsparsed", reqsparsed );
 
 	// var mermtext = "graph LR;\n" + Object.keys( reqsparsed ).join( ";" );
-	var mermtext = `digraph G {\ngraph [nodesep=.1, ranksep=.9, bgcolor="#ffffff00"]\nnode [shape=box, style=rounded, width=.9, height=.4, color="#3B4252", fontcolor="#3B4252"]\nedge [color="#3B4252"]`
+	var mermtext = `digraph G {\ngraph [nodesep=.1, ranksep=.9, bgcolor="#ffffff00"]\nnode [shape=Mrecord, style=rounded, width=.9, height=.4, color="#3B4252", fontcolor="#3B4252", style="filled", fillcolor="transparent"]\nedge [color="#3B4252"]`
 	mermtext += "\n";
 	var nodupes = {};
 	for( var c of Object.keys( reqsparsed ) )
@@ -179,16 +179,115 @@ function main()
 
 	console.log( "generated graphViz", [ mermtext ] )
 
+	function enhanceStructure()
+	{
+		// MAKE DATA STRUCTURE BETTER HERE
+			// probably fast enough to just set set node dom elements through reqsparsed
+
+
+		for( var n of document.querySelectorAll( ".node" ) )
+		{
+			var req = n.querySelector( "title" ).innerHTML;
+			if( !reqsparsed[ req ] ) reqsparsed[ req ] = [];
+			if( req.substring( 0, 2 ) == "or" )
+				reqsparsed[ req ] = [ req.match( /[a-z]{4}\d{4}/g ).map( course => ({ [course]: "prereq" }) ) ]
+			reqsparsed[ req ].domNode = n;
+
+			n.addEventListener( "mouseover", function( e )
+				{
+					e.path[1].querySelector( "path" ).style.fill = d3.schemePastel1[0]; // path[1] is the parent of the path / text
+					req = reqsparsed[ e.path[1].querySelector( "title" ).innerHTML ];
+					var i = 1;
+					var edgeColors = {}; // this is stupid but i wasn't thinking when i added edges to the nodes in reqsparsed
+					for( var and of req ) // hilight reqs
+					{
+						for( var or of and )
+						{
+							reqsparsed[ Object.keys( or )[0] ].domNode.querySelector( "path" ).style.fill = d3.schemePastel1[ i ];
+							edgeColors[ Object.keys( or )[0] ] = i;
+						}
+						var andstr = "or" + and.map( o => Object.keys( o )[0] ).sort().join("");
+						var andreq = reqsparsed[ andstr ];
+						if( andreq ) andreq.domNode.querySelector( "path" ).style.fill = d3.schemePastel1[ i ]; // highlight or node
+						edgeColors[ andstr ] = i;
+						i++;
+					}
+
+					if( req.inEdges ) // highlight edges
+						for( var inEdge of req.inEdges )
+						{
+							console.log( inEdge[0] )
+							inEdge[1].querySelector( "path" ).style.stroke = d3.schemeSet1[ edgeColors[ inEdge[0] ] ];
+							inEdge[1].querySelector( "path" ).style.strokeWidth = "3px";
+							inEdge[1].querySelector( "polygon" ).style.fill = d3.schemeSet1[ edgeColors[ inEdge[0] ] ];
+							inEdge[1].querySelector( "polygon" ).style.stroke = d3.schemeSet1[ edgeColors[ inEdge[0] ] ];
+
+							if( inEdge[0].substring( 0, 2 ) == "or" )
+								for( var inEdge2 of reqsparsed[ inEdge[0] ].inEdges )
+								{
+									inEdge2[1].querySelector( "path" ).style.stroke = d3.schemeSet1[ edgeColors[ inEdge[0] ] ];
+									inEdge2[1].querySelector( "path" ).style.strokeWidth = "3px";
+									inEdge2[1].querySelector( "polygon" ).style.fill = d3.schemeSet1[ edgeColors[ inEdge[0] ] ];
+									inEdge2[1].querySelector( "polygon" ).style.stroke = d3.schemeSet1[ edgeColors[ inEdge[0] ] ];
+								}
+						}
+				} )
+			n.addEventListener( "mouseleave", function( e )
+				{
+					e.target.querySelector( "path" ).style.fill = ""; // node leaving
+					req = reqsparsed[ e.target.querySelector( "title" ).innerHTML ];
+					for( var and of req )
+					{
+						for( var or of and )
+							reqsparsed[ Object.keys( or )[0] ].domNode.querySelector( "path" ).style.fill = ""; // req node
+						var andreq = reqsparsed[ "or" + and.map( o => Object.keys( o )[0] ).sort().join("") ];
+						if( andreq ) andreq.domNode.querySelector( "path" ).style.fill = ""; // or node
+					}
+
+					if( req.inEdges ) // highlight edges
+						for( var inEdge of req.inEdges )
+						{
+							inEdge[1].querySelector( "path" ).style.stroke = "rgb(59, 66, 82)";
+							inEdge[1].querySelector( "path" ).style.strokeWidth = "1px";
+							inEdge[1].querySelector( "polygon" ).style.fill = "rgb(59, 66, 82)";
+							inEdge[1].querySelector( "polygon" ).style.stroke = "rgb(59, 66, 82)";
+
+							if( inEdge[0].substring( 0, 2 ) == "or" )
+								for( var inEdge2 of reqsparsed[ inEdge[0] ].inEdges )
+								{
+									inEdge2[1].querySelector( "path" ).style.stroke = "rgb(59, 66, 82)";
+									inEdge2[1].querySelector( "path" ).style.strokeWidth = "1px";
+									inEdge2[1].querySelector( "polygon" ).style.fill = "rgb(59, 66, 82)";
+									inEdge2[1].querySelector( "polygon" ).style.stroke = "rgb(59, 66, 82)";
+								}
+						}
+				} )
+		}
+
+		for( var e of document.querySelectorAll( ".edge" ) ) // set the inEdges of each node (list of the node names).
+		{
+			var title = e.querySelector( "title" ).innerHTML.split( "-&gt;" );
+			if( !reqsparsed[ title[1] ].inEdges ) reqsparsed[ title[1] ].inEdges = [ [ title[0], e ] ];
+			else reqsparsed[ title[1] ].inEdges.push( [ title[0], e] )
+		}
+
+	}
 
 	d3.select( "#graph" ).graphviz()
-		.zoomScaleExtent( [ .3, 20 ] )
+		.zoomScaleExtent( [ .3, 30 ] )
+		.scale( 1.5 ) // TODO REMOVE WHEN FIX THE UNPREREQS GOIN WAY FKN RIGHT
 		.dot( mermtext )
-		.render( callback => document.getElementById( "loading" ).remove() );
+		.render( callback => enhanceStructure(), document.getElementById( "loading" ).remove() );
 	// d3.select("svg").on("dblclick.zoom", null);
+
+
+
 
 	// document.getElementById( "merm" ).innerHTML = mermtext;
 	// mermaid.init( undefined, "#merm" );
 
+
+/* // inefficient and broken on updated d3-graphviz
 	for( var node of document.querySelectorAll( ".node" ) )
 	node.addEventListener( "mouseenter", function( event )
     {
@@ -220,6 +319,7 @@ function main()
 		}
 
     } );
+*/
 }
 
 </script>
