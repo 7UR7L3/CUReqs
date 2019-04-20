@@ -1,0 +1,77 @@
+<html>
+
+<head>
+
+<style>
+body
+{
+	white-space: pre;
+	font-size: 12px;
+}
+</style>
+
+<script src="https://classes.colorado.edu/sam/core.js?1555043683032"></script>
+
+
+<body>
+
+IF YOU TRUST <a href="https://github.com/Rob--W/cors-anywhere">https://github.com/Rob--W/cors-anywhere</a> AND THIS SITE,
+YOU MAY PROVIDE YOUR OAUTH TOKEN FROM THE RESULTING URL OF VISITING
+<a href="https://ping.prod.cu.edu/as/authorization.oauth2?client_id=CUBoulderClassSearch&response_type=token&IdpSelectorId=BoulderIDP&scope=AcademicRecords&redirect_uri=https://classes.colorado.edu/sam/oauth.html">https://ping.prod.cu.edu/as/authorization.oauth2
+									?client_id=CUBoulderClassSearch
+									&response_type=token
+									&IdpSelectorId=BoulderIDP
+									&scope=AcademicRecords
+									&redirect_uri=https://classes.colorado.edu/sam/oauth.html</a>
+AND I WILL BE ABLE TO USE THE TOKEN TO QUERY YOUR COURSE HISTORY
+TO ENHANCE THE PRESENTATION OF THE PREREQUISITE GRAPH.
+
+THE TOKENS SHOULD BE VALID FOR 2 HOURS (ENSURE EXPIRES_IN IS 7199 SECONDS)
+AND WILL ONLY PROVIDE ACCESS TO ACADEMIC RECORDS (ENSURE &scope=AcademicRecords IS IN YOUR TOKEN REQUEST URL).
+
+PLEASE ENSURE SURE YOU TRUST THESE SERVICES AND BE AWARE THAT IF YOU GIVE SOMEONE A LINK
+THAT INCLUDES YOUR TEMPORARY TOKEN THEY WILL BE ABLE TO ACCESS YOUR ACADEMIC RECORDS FOR THE PERIOD OF ITS VALIDITY.
+
+THIS IS HOW YOUR TOKEN WILL BE USED ON THIS SITE (A GET REQUEST TO THE CLASSES.COLORADO.EDU API):
+[<a href="https://cors-anywhere.herokuapp.com/">https://cors-anywhere.herokuapp.com/</a> +] <a href="https://classes.colorado.edu/api/?page=sisproxy&oauth_token=8ZuiuPxrjWRkX3v5BVy6QBIzPOyQ">https://classes.colorado.edu/api/?page=sisproxy&oauth_token=8ZuiuPxrjWRkX3v5BVy6QBIzPOyQ</a>
+
+<script>
+
+function httpPostAsync(theUrl, callback, postContent) // thanks https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/send#Example_POST
+{
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.onreadystatechange = function() { 
+		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			callback(xmlHttp.responseText);
+	}
+	xmlHttp.open("POST", theUrl, true); // true for asynchronous 
+	xmlHttp.send( postContent );
+}
+function httpGetAsync(theUrl, callback) // thanks https://stackoverflow.com/a/4033310
+{
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.onreadystatechange = function() { 
+		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			callback(xmlHttp.responseText);
+	}
+	xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+	xmlHttp.send(null);
+}
+
+// first query demonstrating using an oauth token for authorization
+httpGetAsync( "https://cors-anywhere.herokuapp.com/https://classes.colorado.edu/api/?page=sisproxy&oauth_token=K1y7CHNAe16ZzK9XkEliJfAluEsf", data =>
+	{
+		document.body.innerHTML += "\n--- RESULT OF QUERYING CLASSES.COLORADO.EDU API FOR ACADEMIC RECORDS (REQUIRES OAUTH TOKEN) ---\n" + JSON.stringify( JSON.parse( data.substring( 10, data.length - 3 ) ), null, 2 );
+
+		// only do second fast query that doesn't require authorization after the slow one that requires authorization is complete
+		httpPostAsync( "https://cors-anywhere.herokuapp.com/https://classes.colorado.edu/api/?page=fose&route=search&keyword=larremore", data =>
+		{
+			document.body.innerHTML += "\n\n\n--- RESULT OF QUERYING CLASSES.COLORADO.EDU API FOR SEARCH QUERY (DOESN'T REQUIRE ANY OAUTH TOKEN)\n" + JSON.stringify( JSON.parse( data ), null, 2 );
+		},
+		`{"other":{"srcdb":"2197"},"criteria":[{"field":"keyword","value":"larremore"}]}` );
+		// https://www.url-encode-decode.com/ useful for figuring out how to construct the post payload
+	} )
+
+// todo directly query view-source:https://classes.colorado.edu/ to find all query options
+
+</script>

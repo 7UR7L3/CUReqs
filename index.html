@@ -54,7 +54,7 @@ colour _and_ group arrows with d3.schemePastel1.map( c => d3.color( c ).darker()
 
 // https://catalog.colorado.edu/ribbit/index.cgi?page=getcourse.rjs&code=CSCI 1320
 
-function httpGetAsync(theUrl, callback)
+function httpGetAsync(theUrl, callback) // thanks https://stackoverflow.com/a/4033310
 {
 	var xmlHttp = new XMLHttpRequest();
 	xmlHttp.onreadystatechange = function() { 
