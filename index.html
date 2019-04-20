@@ -28,6 +28,10 @@ colour _and_ groups with d3.schemePastel1
 colour _and_ group arrows with d3.schemePastel1.map( c => d3.color( c ).darker().toString() ) actually better to just use a darkened d3.schemeSet1 for contrast
 */
 
+.node.taken > path
+{
+	fill: rgba( 0, 0, 0, .3 );
+}
 
 .node path.hover { fill: #aaaacc; }
 .edge path.hover {  stroke-width: 3; }
@@ -52,7 +56,7 @@ colour _and_ group arrows with d3.schemePastel1.map( c => d3.color( c ).darker()
 
 <script>
 
-// https://catalog.colorado.edu/ribbit/index.cgi?page=getcourse.rjs&code=CSCI 1320
+// https://catalog.colorado.edu/ribbit/index.cgi?page=getcourse.rjs&code=CSCI 1320  <-- don't use because terrible to query for every course
 
 function httpGetAsync(theUrl, callback) // thanks https://stackoverflow.com/a/4033310
 {
@@ -63,6 +67,16 @@ function httpGetAsync(theUrl, callback) // thanks https://stackoverflow.com/a/40
 	}
 	xmlHttp.open("GET", theUrl, true); // true for asynchronous 
 	xmlHttp.send(null);
+}
+function httpPostAsync(theUrl, callback, postContent) // thanks https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/send#Example_POST
+{
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.onreadystatechange = function() { 
+		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			callback(xmlHttp.responseText);
+	}
+	xmlHttp.open("POST", theUrl, true); // true for asynchronous 
+	xmlHttp.send( postContent );
 }
 
 
@@ -271,6 +285,26 @@ function main()
 			else reqsparsed[ title[1] ].inEdges.push( [ title[0], e] )
 		}
 
+
+
+
+		// now the graph setup is complete
+
+		// highlight the courses the user has taken
+		var oauth = urlSearchParams.get( "auth" ); // via https://ping.prod.cu.edu/as/authorization.oauth2?client_id=CUBoulderClassSearch&response_type=token&IdpSelectorId=BoulderIDP&scope=AcademicRecords&redirect_uri=https://classes.colorado.edu/sam/oauth.html
+		if( oauth )
+		{
+			httpGetAsync( "https://cors-anywhere.herokuapp.com/https://classes.colorado.edu/api/?page=sisproxy&oauth_token=" + oauth, data =>
+			{
+				var academicInfo = JSON.parse( data.substring( 10, data.length - 3 ) );
+
+				for( var term of Object.keys( academicInfo[ "hist" ] ) )
+					for( var coursestr of academicInfo[ "hist" ][ term ] )
+						for( var course of coursestr.match( /[A-Z]{4} \d{4}/g ) )
+							if( req=reqsparsed[ course.replace( / /g, "" ).toLowerCase() ] )
+								req.domNode.classList.add( "taken" );
+			} )
+		}
 	}
 
 	d3.select( "#graph" ).graphviz()
@@ -279,7 +313,6 @@ function main()
 		.dot( mermtext )
 		.render( callback => enhanceStructure(), document.getElementById( "loading" ).remove() );
 	// d3.select("svg").on("dblclick.zoom", null);
-
 
 
 
