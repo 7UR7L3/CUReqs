@@ -195,8 +195,9 @@ function main()
 
 			n.addEventListener( "mouseover", function( e )
 				{
-					e.path[1].querySelector( "path" ).style.fill = d3.schemePastel1[0]; // path[1] is the parent of the path / text
-					req = reqsparsed[ e.path[1].querySelector( "title" ).innerHTML ];
+					var nodeOver = e.target.parentElement;
+					nodeOver.querySelector( "path" ).style.fill = d3.schemePastel1[0]; // path[1] is the parent of the path / text
+					req = reqsparsed[ nodeOver.querySelector( "title" ).innerHTML ];
 					var i = 1;
 					var edgeColors = {}; // this is stupid but i wasn't thinking when i added edges to the nodes in reqsparsed
 					for( var and of req ) // hilight reqs
@@ -216,7 +217,6 @@ function main()
 					if( req.inEdges ) // highlight edges
 						for( var inEdge of req.inEdges )
 						{
-							console.log( inEdge[0] )
 							inEdge[1].querySelector( "path" ).style.stroke = d3.schemeSet1[ edgeColors[ inEdge[0] ] ];
 							inEdge[1].querySelector( "path" ).style.strokeWidth = "3px";
 							inEdge[1].querySelector( "polygon" ).style.fill = d3.schemeSet1[ edgeColors[ inEdge[0] ] ];
