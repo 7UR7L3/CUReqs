@@ -41,6 +41,9 @@ colour _and_ group arrows with d3.schemePastel1.map( c => d3.color( c ).darker()
 <!-- <script src="https://unpkg.com/mermaid@8.0.0/dist/mermaid.min.js"></script> -->
 <!-- <script>mermaid.initialize( { startOnLoad: true } );</script> -->
 
+<!-- can try jsonc if i really start to fill sessionStorage i guess -->
+<!-- <script src="https://rawcdn.githack.com/tcorral/JSONC/128d17ebcd4e12fa861a0d085a8ce7a29a02d84f/src/JSONC.js"></script> -->
+
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 <script src="https://unpkg.com/viz.js@1.8.0/viz.js" type="javascript/worker"></script>
@@ -91,64 +94,112 @@ if( !urlSearchParams.get( "dept" ) )
 
 reqsparsed = {};
 
-if( r=sessionStorage.getItem( "reqsparsed-" + searchdept ) )
+function loadDept( dept, includeReqless, finishedCallback )
 {
-	reqsparsed = JSON.parse( r );
-	console.log( "(loaded reqsparsed from sessionStorage)" );
-	main();
-}
-else
-	httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/courses-a-z/" + searchdept + "/", data =>
+	if( r=sessionStorage.getItem( "reqsparsed-" + dept ) )
 	{
-		var extractreq = s => s.split( "\n" ).filter( a => a.indexOf( "Requisites: " ) == 0 )[0];
-
-		data = (new window.DOMParser()).parseFromString( data, "text/html" );
-		var courses = [ ...data.querySelectorAll( ".courseblock" ) ];
-
-		var reqs = courses.reduce( function( object, course )
+		reqsparsed = { ...reqsparsed, ...JSON.parse( r ) };
+		console.log( "(loaded reqsparsed from sessionStorage)" );
+		finishedCallback();
+	}
+	else
+		httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/courses-a-z/" + dept + "/", data =>
 		{
-			var extrahtml = course.querySelector( ".courseblockextra" ).innerHTML;
-			var reqtexthtml = (s=extrahtml.substring( extrahtml.indexOf( "<strong>Requisites: " ) )).substring( 0, s.indexOf( "<br>" ) );
-			var reqtext = (new window.DOMParser()).parseFromString( reqtexthtml, "text/html" ).querySelector( "body" ).innerText;
+			var extractreq = s => s.split( "\n" ).filter( a => a.indexOf( "Requisites: " ) == 0 )[0];
 
-			return { ...object, [course.dataset.coursecode]: reqtext.indexOf( "Requisites: " ) == 0 ? reqtext : "no reqs" };
-		}, {} );
+			data = (new window.DOMParser()).parseFromString( data, "text/html" );
+			var courses = [ ...data.querySelectorAll( ".courseblock" ) ];
 
-		// for( var r of Object.values( reqs ) )
-		// 	document.body.innerText += "\n\n" + JSON.stringify( r.split( " and " ).map( a => a.split( " or " ) ) );
-
-
-		for( var course of Object.keys( reqs ) )
-		{
-			var req = reqs[ course ];
-
-			var parse = [];
-
-			for( var and of req.split( / and |\) \(/ ) )
+			var reqs = courses.reduce( function( object, course )
 			{
-				parse.push( [] );
-				var reqtype = "prereq";
-				for( var or of and.split( " or " ) )
-				{
-					if( and.includes( "prereq" ) && ( and.includes( "coreq" ) || and.includes( "co-req" ) ) ) reqtype = "pre/coreq"
-					else if( or.includes( "prereq" ) ) reqtype = "prereq";
-					else if( or.includes( "coreq" ) || or.includes( "co-req" ) ) reqtype = "coreq";
+				var extrahtml = course.querySelector( ".courseblockextra" ).innerHTML;
+				var reqtexthtml = (s=extrahtml.substring( extrahtml.indexOf( "<strong>Requisites: " ) )).substring( 0, s.indexOf( "<br>" ) );
+				var reqtext = (new window.DOMParser()).parseFromString( reqtexthtml, "text/html" ).querySelector( "body" ).innerText;
 
-					for( var c of or.match( /....\xa0..../g ) || [] ) // no break space
-						parse[ parse.length - 1 ].push( { [c.replace( /\s/, "" ).toLowerCase()]: reqtype } );
+				return { ...object, [course.dataset.coursecode]: reqtext.indexOf( "Requisites: " ) == 0 ? reqtext : "no reqs" };
+			}, {} );
+
+			// for( var r of Object.values( reqs ) )
+			// 	document.body.innerText += "\n\n" + JSON.stringify( r.split( " and " ).map( a => a.split( " or " ) ) );
+
+			var newreqsparsed = {};
+
+			for( var course of Object.keys( reqs ) )
+			{
+				var req = reqs[ course ];
+
+				var parse = [];
+
+				for( var and of req.split( / and |\) \(/ ) )
+				{
+					parse.push( [] );
+					var reqtype = "prereq";
+					for( var or of and.split( " or " ) )
+					{
+						if( and.includes( "prereq" ) && ( and.includes( "coreq" ) || and.includes( "co-req" ) ) ) reqtype = "pre/coreq"
+						else if( or.includes( "prereq" ) ) reqtype = "prereq";
+						else if( or.includes( "coreq" ) || or.includes( "co-req" ) ) reqtype = "coreq";
+
+						for( var c of or.match( /....\xa0..../g ) || [] ) // no break space
+							parse[ parse.length - 1 ].push( { [c.replace( /\s/, "" ).toLowerCase()]: reqtype } );
+					}
+					if( parse[ parse.length - 1 ].length == 0 ) parse.pop();
 				}
-				if( parse[ parse.length - 1 ].length == 0 ) parse.pop();
+
+				if( includeReqless || parse.length > 0 )
+					newreqsparsed[ course.replace( /\s/, "" ).toLowerCase() ] = parse;
+
 			}
 
-			reqsparsed[ course.replace( /\s/, "" ).toLowerCase() ] = parse;
-		}
+			reqsparsed = { ...reqsparsed, ...newreqsparsed };
 
-		sessionStorage.setItem( "reqsparsed-" + searchdept, JSON.stringify( reqsparsed ) ); // might as well
+			sessionStorage.setItem( "reqsparsed-" + dept, JSON.stringify( newreqsparsed ) ); // might as well
 
-		// document.body.innerText += JSON.stringify( reqsparsed, null, 4 )
+			// document.body.innerText += JSON.stringify( reqsparsed, null, 4 )
 
-		main();
-	} );
+			finishedCallback();
+		} );
+}
+
+
+if( searchdept == "all" )
+{
+	var allDeps = null;
+	if( d=sessionStorage.getItem( "allDeps" ) )
+	{
+		allDeps = JSON.parse( d );
+		console.log( "(loaded courses-a-z from sessionStorage)" );
+	}
+
+	if( allDeps != null )
+	{
+		loadedComplete = allDeps.length;
+		for( var dept of allDeps )
+			loadDept( dept, false, function()
+				{
+					loadedComplete--;
+					if( loadedComplete == 0 ) main();
+				} );
+	}
+	else
+		httpGetAsync( "https://cors-anywhere.herokuapp.com/https://catalog.colorado.edu/courses-a-z/", data =>
+		{
+			data = (new window.DOMParser()).parseFromString( data, "text/html" );
+			var allDeps = [ ...data.querySelectorAll( "#atozindex li > a" ) ].map( a => a.href.substring( a.href.length - "dept/".length, a.href.length - 1 ) );
+			sessionStorage.setItem( "allDeps", JSON.stringify( allDeps ) )
+
+
+			loadedComplete = allDeps.length;
+			for( var dept of allDeps )
+				loadDept( dept, false, function()
+					{
+						loadedComplete--;
+						if( loadedComplete == 0 ) main();
+					} );
+		} );
+}
+else
+	loadDept( searchdept, false, main );
 
 function main()
 {
@@ -313,6 +364,7 @@ function main()
 	}
 
 	d3.select( "#graph" ).graphviz()
+		.totalMemory( 32 * 1024 * 1024 )
 		.zoomScaleExtent( [ .3, 30 ] )
 		.scale( 1.5 ) // TODO REMOVE WHEN FIX THE UNPREREQS GOIN WAY FKN RIGHT
 		.dot( mermtext )

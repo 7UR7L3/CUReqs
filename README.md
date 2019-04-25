@@ -32,13 +32,14 @@ Prerequisite viewer for i.e. easier planning of courses. Directly sources from i
 - buttons for zooming in and out
 - include toggle for only showing classes taught in a given term (maybe possible to query classes.colorado.edu)
 - a way of searching for the courses required of a major / minor if possible (i have no idea how)
-- render prereqless courses as a subgraph cluster https://graphviz.gitlab.io/_pages/Gallery/directed/cluster.html (or see packMode and smoothing and repulsiveforce and remincross?)
+- render prereqless courses as a subgraph cluster https://graphviz.gitlab.io/_pages/Gallery/directed/cluster.html (or see packMode and smoothing and repulsiveforce and remincross? or have toggle for rendering at all and enforce not rendering if dept=all)
 - different styles
 - fix bug in math 1150. dunno how tbh. maybe split into multiple "Requires " sections first
 - proper efficient search to focus on a class and only render nodes before and after it (if not even more focussed)
 - make the catalog.colorado.edu link a proper link and append the department that you're on
 - see if there's a way to determine which classes you've taken not at boulder and also get the courses you've taken at other campuses i.e. continuing education
 - ( momentum for panning if possible ) this appears not to be possible without a ridiculous amount of effort
+- [ ability to load all requisits in the school with dept=all ]
 - [ ability to highlight or otherwise distinguish the courses that you've taken ]
 - [ improve highlighting to fully pass through _or_'s ]
 - [ support recommended reqs for i.e. atoc ]
