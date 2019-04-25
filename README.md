@@ -37,6 +37,7 @@ Prerequisite viewer for i.e. easier planning of courses. Directly sources from i
 - fix bug in math 1150. dunno how tbh. maybe split into multiple "Requires " sections first
 - proper efficient search to focus on a class and only render nodes before and after it (if not even more focussed)
 - make the catalog.colorado.edu link a proper link and append the department that you're on
+- see if there's a way to determine which classes you've taken not at boulder and also get the courses you've taken at other campuses i.e. continuing education
 - ( momentum for panning if possible ) this appears not to be possible without a ridiculous amount of effort
 - [ ability to highlight or otherwise distinguish the courses that you've taken ]
 - [ improve highlighting to fully pass through _or_'s ]
@@ -48,6 +49,8 @@ Prerequisite viewer for i.e. easier planning of courses. Directly sources from i
 
 ## to optimize:
 
+- maybe cache oauth api queries because they're slow
+- or just start oauth api queries way earlier
 - set properties / data attributes of dom elements to avoid query selectors
 - trust .children tbh if setting properties is too expensive or something
 - [ see if there's a more efficient mouseover / hover (maybe jquery is worth it) ]

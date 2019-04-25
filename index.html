@@ -303,6 +303,11 @@ function main()
 						for( var course of coursestr.match( /[A-Z]{4} \d{4}/g ) )
 							if( req=reqsparsed[ course.replace( / /g, "" ).toLowerCase() ] )
 								req.domNode.classList.add( "taken" );
+				for( var term of Object.keys( academicInfo[ "reg" ] ) )
+					for( var coursestr of academicInfo[ "reg" ][ term ] )
+						for( var course of coursestr.match( /[A-Z]{4} \d{4}/g ) )
+							if( req=reqsparsed[ course.replace( / /g, "" ).toLowerCase() ] )
+								req.domNode.classList.add( "taken" );
 			} )
 		}
 	}
@@ -316,43 +321,6 @@ function main()
 
 
 
-	// document.getElementById( "merm" ).innerHTML = mermtext;
-	// mermaid.init( undefined, "#merm" );
-
-
-/* // inefficient and broken on updated d3-graphviz
-	for( var node of document.querySelectorAll( ".node" ) )
-	node.addEventListener( "mouseenter", function( event )
-    {
-    	for( var n of document.querySelectorAll( ".node > path" ) )
-			n.classList.remove( "hover" );
-		event.target.querySelector( "path" ).classList.add( "hover" );
-
-		classOn = event.target.querySelector( "title" ).innerHTML;
-		var colouron = 0;
-		for( var and of reqsparsed[ classOn ] || [] )
-		{
-			colouron++;
-			for( var or of and )
-				for( var node of document.querySelectorAll( ".node" ) )
-					if( node.querySelector( "title" ).innerHTML == Object.keys( or )[0] )
-						node.querySelector( "path" ).classList.add( "hover" );
-		}
-
-		for( var e of document.querySelectorAll( ".edge" ) )
-		{
-			if( e.querySelector( "title" ).innerHTML.includes( "-&gt;" + classOn ) )
-			{
-				e.querySelector( "path" ).classList.add( "hover" );
-				for( n of [ ...document.querySelectorAll( ".node" ) ].filter( n => n.querySelector( "title" ).innerHTML.includes( "-&gt;" ) && e.querySelector( "title" ).innerHTML.includes( n.querySelector( "title" ).innerHTML ) ) )
-					n.querySelector( "path" ).classList.add( "hover" );
-			}
-			else
-				e.querySelector( "path" ).classList.remove( "hover" );
-		}
-
-    } );
-*/
 }
 
 </script>
